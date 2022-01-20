@@ -1,4 +1,5 @@
 ## Usage
+```
 usage: backman.py [-h] [--no-confirm] [--no-sync] [--interactive] [--mirror] [--delete] [--map MAP]
 
 Simple python wrapper for rsync to allow ease of many paths or an interactive experience with confirmation dialogs.
@@ -11,6 +12,7 @@ options:
   --mirror       Sync src -> dst, then dst -> src
   --delete       Delete files on remote not on source (after sync, unless also --no-sync)
   --map MAP      Files to sync together (Default: filesMap.json)
+```
 
 ## Examples
 ```bash
@@ -33,12 +35,13 @@ Each file path mapping can have one source and multiple destinations.
 
 ### Example JSON to sync local files to backSrv
 Also syncs local http server to two backSrvs (backSrv1, backSrv2)
+```JSON
 [{
         "host": "",
         "dirs": [
                  {"src": "~/Documents/", "dests": [{"host": "backSrv", "dest": "~/Documents/"}]},
                  {"src": "~/Downloads/", "dests": [{"host": "backSrv", "dest": "~/Downloads/"}]},
-                 {"src": "/srv/http/test/", "dests": [{"host": "backSrv", "dest": "~/test-www/"},{"host": "backSrv2", "dest": "~/test=www/"}]}
+                 {"src": "/srv/http/test/", "dests": [{"host": "backSrv", "dest": "~/test-www/"},{"host": "backSrv2", "dest": "~/test-www/"}]}
                 ]
 }]
-
+```
