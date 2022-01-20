@@ -1,0 +1,8 @@
+[{
+	"host": "",
+	"dirs": [
+		 {"src": "~/Documents/", "dests": [{"host": "backSrv", "dest": "~/Documents/"}]},
+		 {"src": "~/Downloads/", "dests": [{"host": "backSrv", "dest": "~/Downloads/"}]},
+		 {"src": "/srv/http/test/", "dests": [{"host": "backSrv", "dest": "~/test-www/"},{"host": "backSrv2", "dest": "~/test=www/"}]}
+		]
+}]
