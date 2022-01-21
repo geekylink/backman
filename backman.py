@@ -227,11 +227,6 @@ def SafeRemove(srcHost: str, srcDir: str, destHost: str, destDir: str):
 
     return RsyncDir(srcHost, srcDir, destHost, destDir, backoff=False, confirm=True, delete=True) is not None
 
-def SafeMirror(srcHost: str, srcDir: str, dstHost: str, dstDir: str):
-    res = SafeSync(srcHost, srcDir, dstHost, dstDir)
-
-    return True
-
 def readFileMap(filename: str):
     """ 
         Reads json file path mapping config 
@@ -243,7 +238,10 @@ def readFileMap(filename: str):
         cfg = json.load(file)
 
     # Build mirror of file paths array
-    mirrorAr = []
+    mirrorMap = []
+    mirrorMap.append([])
+    mirrorHosts = []
+
     for host in cfg:
         srcHost = host["host"]
 
@@ -255,21 +253,43 @@ def readFileMap(filename: str):
                 dstHost = dstD["host"]
                 dstDir = dstD["dest"]
 
-                mirrorAr.append([srcHost, srcDir, dstHost, dstDir])
 
 
-    return mirrorAr
+                # First mirror host
+                if (len(mirrorMap) == 1 and len(mirrorMap[0]) == 0):
+                    mirrorHosts.append(dstHost)
+                else:
+                    #if mirrorHosts[uniqDsts] != dstHost:
+                    if dstHost not in mirrorHosts: # If not in list, add it
+                        mirrorHosts.append(dstHost)
+                        mirrorMap.append([])
+                        #print("FINDDDD", mirrorHosts.index(dstHost))
 
-def printFileMap(mirrorAr, showId: bool = True):
-    for i in range(len(mirrorAr)):
-        srcHost, srcDir = mirrorAr[i][0], mirrorAr[i][1]
-        dstHost, dstDir = mirrorAr[i][2], mirrorAr[i][3]
+                mirrorId = mirrorHosts.index(dstHost)
+
+
+                mirrorMap[mirrorId].append([srcHost, srcDir, dstHost, dstDir])
+
+    return mirrorMap
+
+def printFileMap(mirrorMap, showId: bool = True):
+    """
+        Helper function for printing file mapping
+    """
+    for i in range(len(mirrorMap)):
         if showId:
-            print(i, srcHost, srcDir, dstHost, dstDir)
+            print(i, mirrorMap[i][0][2] + " paths:")
         else:
-            print(srcHost, srcDir, dstHost, dstDir)
+            print(mirrorMap[i][0][2] + " paths:")
+        for j in range(len(mirrorMap[i])):
+            srcHost, srcDir = mirrorMap[i][j][0], mirrorMap[i][j][1]
+            dstHost, dstDir = mirrorMap[i][j][2], mirrorMap[i][j][3]
+            if showId:
+                print("\t" + str(i) + "-" + str(j), srcHost, srcDir, dstHost, dstDir)
+            else:
+                print("\t" + srcHost, srcDir, dstHost, dstDir)
 
-def InteractiveMode(mirrorAr):
+def InteractiveMode(mirrorMap):
     """
         interactive user mode, can mirror, delete, or just sync individual paths
     """
@@ -278,16 +298,33 @@ def InteractiveMode(mirrorAr):
     while True:
         # Output list for --interactive mode to choose from
         print("File map to choose from:")
-        printFileMap(mirrorAr)
+        printFileMap(mirrorMap)
 
         # Gets selection ID from user
-        selId = -1
-        while selId < 0 or selId > len(mirrorAr)-1:
+        hostId = -1
+        pathId = -1
+        selectAll = False
+        while pathId < 0 or hostId < 0:
             try:
                 selId = input("Input id (or 'q' to quit): ")
                 if selId == "q":
                     return
-                selId = int(selId)
+        
+                # If the user just picks a host, sync all
+                if selId.find("-") == -1:
+                    hostId = int(selId)
+                    selectAll = True
+                    break
+
+                hostId = int(selId[0:selId.find("-")])
+                pathId = int(selId[selId.find("-")+1:])
+
+                if hostId > len(mirrorMap) - 1:
+                    hostId = -1
+                else:
+                    if pathId > len(mirrorMap[hostId])-1:
+                        pathId = -1
+
             except KeyboardInterrupt:
                 print("\nGoodbye :(")
                 sys.exit(0)
@@ -296,13 +333,26 @@ def InteractiveMode(mirrorAr):
 
         # Sync just that selection
 
-        srcHost = mirrorAr[selId][0]
-        srcDir = mirrorAr[selId][1]
-        dstHost = mirrorAr[selId][2]
-        dstDir = mirrorAr[selId][3]
+        pathAr = []
+        if selectAll:
+            for i in range(len(mirrorMap[hostId])):
+                pathAr.append(i)
+        else:
+            pathAr.append(pathId)
 
         ans = ""
         while ans != "d":
+            if selectAll:
+                print("Paths selected:")
+            else:
+                print("Path selected:")
+            for i in pathAr:
+                srcHost = mirrorMap[hostId][i][0]
+                srcDir  = mirrorMap[hostId][i][1]
+                dstHost = mirrorMap[hostId][i][2]
+                dstDir  = mirrorMap[hostId][i][3]
+                print(srcHost, srcDir, dstHost, dstDir)
+
             ans = askUser("What do you want to do?\n\
 \n's'ync - sync source files to remote\
 \n'r'emote sync - sync remote files to source\
@@ -310,18 +360,23 @@ def InteractiveMode(mirrorAr):
 \n'd'one - Finished with this dir\
 \n\nChoice: ", ["c", "s", "d", "r"])
 
-            if ans == "c":
-                SafeRemove(srcHost, srcDir, dstHost, dstDir)
-            elif ans == "s":
-                SafeSync(srcHost, srcDir, dstHost, dstDir)
-            elif ans == "r":
-                SafeSync(dstHost, dstDir, srcHost, srcDir)
-            elif ans == "d":
-                pass
-            else:
-                raise Exception("Invalid response from user!")
+            # Loops through each path selected (or just one)
+            for i in pathAr:
+                srcHost = mirrorMap[hostId][i][0]
+                srcDir  = mirrorMap[hostId][i][1]
+                dstHost = mirrorMap[hostId][i][2]
+                dstDir  = mirrorMap[hostId][i][3]
 
-        #SafeMirror(srcHost, srcDir, dstHost, dstDir)
+                if ans == "c":
+                    SafeRemove(srcHost, srcDir, dstHost, dstDir)
+                elif ans == "s":
+                    SafeSync(srcHost, srcDir, dstHost, dstDir)
+                elif ans == "r":
+                    SafeSync(dstHost, dstDir, srcHost, srcDir)
+                elif ans == "d":
+                    pass
+                else:
+                    raise Exception("Invalid response from user!")
 
 def AutoMode(mirrorAr, args):
     for i in range(len(mirrorAr)):
@@ -397,7 +452,7 @@ if __name__ == "__main__":
     args = parseArgs()
 
     # JSON File path map
-    mirrorAr = readFileMap(args.map)
+    mirrorMap = readFileMap(args.map)
 
     # ZFS prep
     if not PrepareZFS():
@@ -405,7 +460,9 @@ if __name__ == "__main__":
         os.exit(1)
 
     if args.interactive:
-        InteractiveMode(mirrorAr)
+        InteractiveMode(mirrorMap)
     else:
-        AutoMode(mirrorAr, args)
+        # Loop over each hosts mirror Array
+        for i in range(len(mirrorMap)):
+            AutoMode(mirrorMap[i], args)
 
