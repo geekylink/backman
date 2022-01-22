@@ -79,32 +79,6 @@ def RunCMD(cmd: str, timeout = 15):
 
     return {"out": outs, "err": errs, "ret": proc.returncode}
 
-def IsZFSReady():
-
-    return (RunCMD("zpool status")["out"] != "no pools available")
-
-def MountZFS(pool: str):
-    """ TODO: improve this shit """
-    # TODO:
-    print("Importing volume...")
-    zfsImport = RunCMD("sudo zpool import " + pool)
-    if zfsImport["out"] == "":
-        print("Mounting volumes...")
-
-        zfsRet = os.system("sudo zfs mount -la") # Must be os.system for password auth
-        print(zfsRet, zfsRet == 0)
-        return (zfsRet == 0)
-    else:
-        print("Error while mounting: ", zfsImport["out"])
-
-    return False
-
-def PrepareZFS():
-    if not IsZFSReady():
-        return MountZFS("bluedrive")
-
-    return True
-
 class CouldNotConnectException(Exception):
     """ Custom exception """
 
@@ -453,11 +427,6 @@ if __name__ == "__main__":
 
     # JSON File path map
     mirrorMap = readFileMap(args.map)
-
-    # ZFS prep
-    if not PrepareZFS():
-        print("Aborting data sync")
-        os.exit(1)
 
     if args.interactive:
         InteractiveMode(mirrorMap)
