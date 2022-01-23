@@ -18,16 +18,28 @@ options:
 ```bash
 ./backman.py --interactive --map filesMap-real.json
 ```
-Loads file path mapping from filesMap-real.json and provides an interactive console for management:
-
-Output:
-```
 File map to choose from:
-0  ~/Documents/ backSrv ~/Documents/
-1  ~/Downloads/ backSrv ~/Downloads/
-2  /srv/http/test/ backSrv ~/test-www/
-3  /srv/http/test/ backSrv2 ~/test=www/
-Input id (or 'q' to quit): 
+0 backSrv paths:
+        0-0  ~/Documents/ backSrv ~/Documents/
+        0-1  ~/Downloads/ backSrv ~/Downloads/
+        0-2  /srv/http/test/ backSrv ~/test-www/
+1 backSrv2 paths:
+        1-0  /srv/http/test/ backSrv2 ~/test=www/
+Input id (or 'q' to quit):
+```
+User can choose (0, 1) for syncing all paths to server, or (0-2) just for one.
+
+```
+Path selected:
+ /srv/http/test/ backSrv ~/test-www/
+What do you want to do?
+
+'s'ync - sync source files to remote
+'r'emote sync - sync remote files to source
+'c'lean - remove files on remote that no longer exist on source
+'d'one - Finished with this dir
+
+Choice:
 ```
 
 ## JSON File Mapping
