@@ -16,7 +16,8 @@ options:
 
 ## Examples
 ```bash
-./backman.py --interactive --map filesMap-real.json
+./backman.py --interactive --map filesMap-ex.json
+```
 ```
 File map to choose from:
 0 backSrv paths:
