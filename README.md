@@ -28,7 +28,7 @@ File map to choose from:
         1-0  /srv/http/test/ backSrv2 ~/test=www/
 Input id (or 'q' to quit):
 ```
-User can choose (0, 1) for syncing all paths to server, or (0-2) just for one.
+User can choose 0, 1 for syncing all paths to server, or "0-2" just for one.
 
 ```
 Path selected:
