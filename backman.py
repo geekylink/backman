@@ -331,8 +331,9 @@ def InteractiveMode(mirrorMap):
 \n's'ync - sync source files to remote\
 \n'r'emote sync - sync remote files to source\
 \n'c'lean - remove files on remote that no longer exist on source\
+\n't'idy - remove files on source that no longer exist on remote\
 \n'd'one - Finished with this dir\
-\n\nChoice: ", ["c", "s", "d", "r"])
+\n\nChoice: ", ["c", "s", "d", "r", "t"])
 
             # Loops through each path selected (or just one)
             for i in pathAr:
@@ -343,6 +344,8 @@ def InteractiveMode(mirrorMap):
 
                 if ans == "c":
                     SafeRemove(srcHost, srcDir, dstHost, dstDir)
+                elif ans == "t":
+                    SafeRemove(dstHost, dstDir, srcHost, srcDir)
                 elif ans == "s":
                     SafeSync(srcHost, srcDir, dstHost, dstDir)
                 elif ans == "r":
@@ -367,6 +370,8 @@ def AutoMode(mirrorAr, args):
                     SafeSync(srcHost, srcDir, dstHost, dstDir)
                 if args.delete:
                     SafeRemove(srcHost, srcDir, dstHost, dstDir)
+                elif args.tidy:
+                    SafeRemove(dstHost, dstDir, srcHost, srcDir)
         else: # --no-confirm
             if args.sync:
                 RsyncDirPrint(srcHost, srcDir, dstHost, dstDir)
@@ -403,6 +408,10 @@ def parseArgs():
                                 const=True, default=False,
                                 help='Delete files on remote not on source (after sync, unless also --no-sync)')
 
+    parser.add_argument('--tidy', dest='tidy', action='store_const',
+                                const=True, default=False,
+                                help='Delete files on source not on remote (after sync, unless also --no-sync)')
+
     parser.add_argument('--map', dest='map', action='store',
                                 default="filesMap.json",
                                 help='Files to sync together (Default: filesMap.json)')
@@ -411,14 +420,17 @@ def parseArgs():
 
     # Arg validation
 
-    if args.interactive and (args.mirror or args.delete or not args.sync):
-        raise Exception("Cannot use --interactive with --mirror, --delete, or --no-sync")
+    if args.interactive and (args.mirror or args.delete or args.tidy or not args.sync):
+        raise Exception("Cannot use --interactive with --mirror, --delete, --tidy, or --no-sync")
 
-    if args.mirror and args.delete:
-        raise Exception("Cannot --delete and --mirror together")
+    if args.mirror and (args.delete or args.tidy):
+        raise Exception("Cannot --delete or --tidy with --mirror together")
 
-    if not args.sync and not args.mirror and not args.delete:
-        raise Exception("So do nothing?")
+    if args.delete and args.tidy:
+        raise Exception("Cannot --delete and --tidy together")
+
+    #if not args.sync and not args.mirror and not args.delete:
+    #    raise Exception("So do nothing?")
 
     return args
 
